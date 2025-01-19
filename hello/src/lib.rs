@@ -19,7 +19,7 @@ trait FnBox {
 
 impl<F: FnOnce()> FnBox for F {
     fn call_box(self: Box<F>) {
-        (*self)()
+        (*self)() // *self：ヒープの中の関数を取り出している
     }
 }
 
@@ -48,7 +48,7 @@ impl ThreadPool {
 
         let receiver = Arc::new(Mutex::new(receiver));
 
-        let mut workers = Vec::with_capacity(size);
+        let mut workers = Vec::with_capacity(size); // あらかじめスペースを確保
 
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
@@ -61,7 +61,9 @@ impl ThreadPool {
 
     pub fn execute<F>(&self, f: F) 
         where
-            F: FnOnce() + Send + 'static // スレッドの実行にどれくらいかかるかわからないので最も長いライフタイムを設定
+            F: FnOnce() + Send + 'static // FnOnce(): 引数の所有権を一度だけ奪う（今回はstream）
+                                         // スレッドの実行にどれくらいかかるかわからないので最も長いライフタイムを設定
+                                         // Send: スレッド間でデータが安全に移動可能であることを示す
     {
         let job = Box::new(f);
         self.sender.send(Message::NewJob(job)).unwrap();
@@ -104,7 +106,7 @@ impl Worker {
                     Message::NewJob(job) => {
                         println!("Worker {} got a job; executing.", id);
 
-                        job.call_box();
+                        job.call_box(); // この時点で、jobの中身のクロージャがスレッドにムーブする
                     },
                     Message::Terminate => {
                         println!("Worker {} was told to terminate.", id);

@@ -9,12 +9,21 @@ use std::time::Duration;
 use std::thread;
 
 fn main() {
+    // unwrapでResultの中身を取り出す
+    // Ok(TcpLister)なら、その中身を返す
+    // Errならプログラムをパニックさせて終了
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+
+    // 4つのワーカースレッドを持つスレッドプールを作成
     let pool = ThreadPool::new(4);
 
+    // listener.incoming(): 新しい接続を待つイテレータを返す
+    // take(2): 最初の2つの接続のみを処理する制限
+    // リクエストを待ち受けている間はincomingがブロッキング状態になる
     for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
+        // streamの所有権はhandle_connectionにうつる
         pool.execute(|| {
             handle_connection(stream);
         });

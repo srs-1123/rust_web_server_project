@@ -19,7 +19,9 @@ trait FnBox {
 
 impl<F: FnOnce()> FnBox for F {
     fn call_box(self: Box<F>) {
-        (*self)() // *self：ヒープの中の関数を取り出している
+        // クロージャで引数を代入すれば、引数無し関数として扱える
+        // *self：ヒープの中の関数を取り出している
+        (*self)()
     }
 }
 
@@ -61,8 +63,8 @@ impl ThreadPool {
 
     pub fn execute<F>(&self, f: F) 
         where
-            F: FnOnce() + Send + 'static // FnOnce(): 引数の所有権を一度だけ奪う（今回はstream）
-                                         // スレッドの実行にどれくらいかかるかわからないので最も長いライフタイムを設定
+            F: FnOnce() + Send + 'static // FnOnce(): 引数の所有権を一度だけ奪う（今回はstream。不変でも可変でもいい）
+                                         // 'static: スレッドの実行にどれくらいかかるかわからないので最も長いライフタイムを設定
                                          // Send: スレッド間でデータが安全に移動可能であることを示す
     {
         let job = Box::new(f);
